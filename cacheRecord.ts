@@ -11,11 +11,6 @@ declare class WeakRef<T extends object>
     deref(): T
 }
 
-interface CacheRecordEvents
-{
-
-}
-
 export function cacheRecord<T extends object>(gcDelay = 60 * 1000)
 {
     const caches: Record<string, WeakRef<T>> = {}
