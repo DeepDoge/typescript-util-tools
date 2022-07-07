@@ -11,34 +11,36 @@ declare class WeakRef<T extends object>
     deref(): T
 }
 
-const MAX_AGE = 1000 * 60
-
 export function cachedPromise<P extends Record<string, any>, R extends object>(keyGetter: (params: P) => string, promise: (params: P) => Promise<R>)
 {
     const caches: Record<string, WeakRef<R>> = {}
-    const copies: Record<string, { lastUse: number, value: R }> = {}
+    const infos: Record<string, { active: boolean, lastActive: number, copy: R }> = {}
     const finalizer = new FinalizationRegistry((key: string) =>
     {
         delete caches[key]
-        const copy = copies[key]
-        const age = Date.now() - copy.lastUse
-        if (age < MAX_AGE) 
+        const info = infos[key]
+        if (info.active)
         {
-            // console.log(`GC happened but using the copy: ${key}`)
-            setCache(key, copy.value);
+            // console.log(`Not active anymore: ${key}`)
+            info.lastActive = Date.now()
+            info.active = false
 
-            // This prevent creation of new copies before the value is old enough, so we don't do unnecessary GC loops
-            (async () => {
-                const same = copy.value
-                const timeLeft = MAX_AGE - age
-                await new Promise((resolve) => setTimeout(resolve, timeLeft))
-                // console.log("Stop preventing GC: ", key)
+            const copyCache = info.copy
+            setCache(key, copyCache);
+
+            // Prevent GC for a while
+            (async () =>
+            {
+                // console.log("Delay GC for while:", key)
+                const same = copyCache
+                await new Promise((resolve) => setTimeout(resolve, 1000 * 60))
+                // if (!info.active) console.log("Haven't been active for a while, free to finalize:", key)
             })()
         }
-        else 
+        else
         {
-            delete copies[key]
-            // console.log(`Finalizing cached promise: ${key}`)
+            delete infos[key]
+            // console.log(`Finalize: ${key}`)
         }
     })
     function setCache(key: string, value: R)
@@ -51,7 +53,9 @@ export function cachedPromise<P extends Record<string, any>, R extends object>(k
             finalizer.unregister(cache)
         }
 
-        copies[key] = { value: { ...value }, lastUse: copies[key]?.lastUse ?? 0 }
+        if (infos[key]) infos[key].copy = { ...value }
+        else infos[key] = { active: false, copy: { ...value }, lastActive: 0 }
+
         caches[key] = new WeakRef(value)
         finalizer.register(value, key, value)
     }
@@ -59,7 +63,8 @@ export function cachedPromise<P extends Record<string, any>, R extends object>(k
     {
         const value = caches[key]?.deref()
         if (!value) return value
-        copies[key].lastUse = Date.now()
+        // if (!infos[key].active) console.log("Active:", key)
+        infos[key].active = true
         return value
     }
 
