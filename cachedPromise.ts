@@ -1,28 +1,67 @@
-const FinalizationRegistry = (window as any).FinalizationRegistry
+declare class FinalizationRegistry<T>
+{
+    constructor(finalizer: (value: T) => void)
+    register(object: object, value: T, unregister: object): void
+    unregister(unregister: object): void
+}
+
+declare class WeakRef<T extends object>
+{
+    constructor(object: T)
+    deref(): T
+}
+
+const MAX_AGE = 1000 * 60
 
 export function cachedPromise<P extends Record<string, any>, R extends object>(keyGetter: (params: P) => string, promise: (params: P) => Promise<R>)
 {
-    // Using WeakSet instead of WeakRef because WeakRef doesn't have full browser support yet.
-    const caches: Record<string, WeakSet<R>> = {}
+    const caches: Record<string, WeakRef<R>> = {}
+    const copies: Record<string, { lastUse: number, value: R }> = {}
     const finalizer = new FinalizationRegistry((key: string) =>
     {
-        console.log(`Finalizing cached promise: ${key}`)
         delete caches[key]
+        const copy = copies[key]
+        const age = Date.now() - copy.lastUse
+        if (age < MAX_AGE) 
+        {
+            console.log(`GC happened but using the copy ${key}`)
+            setCache(key, copy.value);
+
+            // This prevent creation of new copies before the value is old enough, so we don't do unnecessary GC loops
+            (async () => {
+                const same = copy.value
+                const timeLeft = MAX_AGE - age
+                await new Promise((resolve) => setTimeout(resolve, timeLeft))
+                console.log("Stop preventing loop for", key)
+            })()
+        }
+        else 
+        {
+            delete copies[key]
+            console.log(`Finalizing cached promise: ${key}`)
+        }
     })
     function setCache(key: string, value: R)
     {
+        if (typeof value !== 'object') throw `Can only cache objects but got ${key}: ${value}(${typeof value})`
         const cache = getCache(key)
         if (cache) 
         {
             if (cache === value) return
             finalizer.unregister(cache)
         }
-        caches[key] = new WeakSet([value])
-        finalizer.register(value, key)
+
+        copies[key] = { value: { ...value }, lastUse: copies[key]?.lastUse ?? 0 }
+        caches[key] = new WeakRef(value)
+        finalizer.register(value, key, value)
     }
     function getCache(key: string)
     {
-        return caches[key]?.[0]
+        const value = caches[key]?.deref()
+        if (!value) return value
+        console.log('use', key)
+        copies[key].lastUse = Date.now()
+        return value
     }
 
     const onGoingTasks: Record<string, Promise<R>> = {}
@@ -39,7 +78,7 @@ export function cachedPromise<P extends Record<string, any>, R extends object>(k
         setCache(key, result)
         delete onGoingTasks[key]
 
-        return result
+        return getCache(key)
     }
 
     const taskWithInternalAccess: typeof task &
