@@ -59,7 +59,6 @@ export function cachedPromise<P extends Record<string, any>, R extends object>(k
     {
         const value = caches[key]?.deref()
         if (!value) return value
-        console.log('use', key)
         copies[key].lastUse = Date.now()
         return value
     }
