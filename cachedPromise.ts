@@ -24,7 +24,7 @@ export function cachedPromise<P extends Record<string, any>, R extends object>(k
         const age = Date.now() - copy.lastUse
         if (age < MAX_AGE) 
         {
-            console.log(`GC happened but using the copy ${key}`)
+            // console.log(`GC happened but using the copy: ${key}`)
             setCache(key, copy.value);
 
             // This prevent creation of new copies before the value is old enough, so we don't do unnecessary GC loops
@@ -32,13 +32,13 @@ export function cachedPromise<P extends Record<string, any>, R extends object>(k
                 const same = copy.value
                 const timeLeft = MAX_AGE - age
                 await new Promise((resolve) => setTimeout(resolve, timeLeft))
-                console.log("Stop preventing loop for", key)
+                // console.log("Stop preventing GC: ", key)
             })()
         }
         else 
         {
             delete copies[key]
-            console.log(`Finalizing cached promise: ${key}`)
+            // console.log(`Finalizing cached promise: ${key}`)
         }
     })
     function setCache(key: string, value: R)
