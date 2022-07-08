@@ -1,4 +1,5 @@
 import { cacheRecord } from "./cacheRecord"
+import type { FinalizeCallback } from "./weakRecord"
 
 
 export function cachedPromise
@@ -8,7 +9,7 @@ export function cachedPromise
     >
     (
         keyGetter: (params: P) => string,
-        task: (params: { params: P, setFinalizeCallback: (finalizeCallback: () => void) => void }) => Promise<R>
+        task: (params: { params: P, setFinalizeCallback: (finalizeCallback: FinalizeCallback) => void }) => Promise<R>
     )
 {
     const caches = cacheRecord<R>()
@@ -23,12 +24,15 @@ export function cachedPromise
         const onGoing = running[key]
         if (onGoing) return await onGoing
 
-        let _finalizeCallback: () => void = null
-        const result = await (running[key] = task({
-            params,
-            setFinalizeCallback: (finalizeCallback: typeof _finalizeCallback) => _finalizeCallback = finalizeCallback
-        }))
-        caches.set(key, result, _finalizeCallback)
+        {
+            let finalizeCallback: FinalizeCallback = null
+            const result = await (running[key] = task({
+                params,
+                setFinalizeCallback: (callback: FinalizeCallback) => finalizeCallback = callback
+            }))
+            caches.set(key, result, finalizeCallback)
+        }
+        
         delete running[key]
 
         return caches.get(key)
