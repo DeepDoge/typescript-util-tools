@@ -14,15 +14,15 @@ declare class WeakRef<T extends object>
 export type FinalizeCallback = (key: string) => void
 export function weakRecord<T extends object>()
 {
-    const record: Record<string, 
+    const records: Record<string, 
     {  
         finalizeCallback?: FinalizeCallback
         weakRef: WeakRef<T>
     }> = {}
     const finalizer = new FinalizationRegistry((key: string) =>
     {
-        const cache = record[key]
-        delete record[key]
+        const cache = records[key]
+        delete records[key]
         cache.finalizeCallback?.call(null, key)
     })
     function set(key: string, value: T, finalizeCallback?: FinalizeCallback)
@@ -32,7 +32,7 @@ export function weakRecord<T extends object>()
         if (cache === value) return
         if (cache) finalizer.unregister(cache)
 
-        record[key] = 
+        records[key] = 
         {
             finalizeCallback,
             weakRef: new WeakRef(value)
@@ -41,12 +41,12 @@ export function weakRecord<T extends object>()
     }
     function get(key: string)
     {
-        return record[key]?.weakRef.deref()
+        return records[key]?.weakRef.deref()
     }
 
     function has(key: string) 
     { 
-        return record[key] 
+        return records[key] 
     }
 
     return {

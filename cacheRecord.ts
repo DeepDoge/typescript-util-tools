@@ -22,7 +22,7 @@ interface CacheRecordInfo<T extends object>
 
 export function cacheRecord<T extends object>(delayGC = 60 * 1000)
 {
-    const record = weakRecord<T>()
+    const records = weakRecord<T>()
     const infos: Record<string, CacheRecordInfo<T>> = {}
 
     function afterFinalize(key: string): boolean
@@ -57,7 +57,7 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
 
     function set(key: string, value: T, finalizeCallback?: FinalizeCallback)
     {
-        record.set(key, value, (key) => {
+        records.set(key, value, (key) => {
             const isRemoved = afterFinalize(key)
             if (isRemoved) finalizeCallback(key)
         })
@@ -67,7 +67,7 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
     }
     function get(key: string)
     {
-        const value = record.get(key)
+        const value = records.get(key)
         if (!value) return value
         // if (!infos[key].active) console.log("Active:", key)
         infos[key].active = true
@@ -77,6 +77,6 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
     return {
         set,
         get,
-        has(key: string) { record.has(key) }
+        has(key: string) { records.has(key) }
     }
 }

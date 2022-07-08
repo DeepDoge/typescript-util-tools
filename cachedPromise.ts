@@ -12,13 +12,13 @@ export function cachedPromise
         task: (params: { params: P, setFinalizeCallback: (finalizeCallback: FinalizeCallback) => void }) => Promise<R>
     )
 {
-    const caches = cacheRecord<R>()
+    const records = cacheRecord<R>()
     const running: Record<string, Promise<R>> = {}
 
     async function promise(params: P): Promise<R>
     {
         const key = keyGetter(params)
-        const cache = caches.get(key)
+        const cache = records.get(key)
         if (cache) return cache
 
         const onGoing = running[key]
@@ -30,18 +30,18 @@ export function cachedPromise
                 params,
                 setFinalizeCallback: (callback: FinalizeCallback) => finalizeCallback = callback
             }))
-            caches.set(key, result, finalizeCallback)
+            records.set(key, result, finalizeCallback)
         }
-        
+
         delete running[key]
 
-        return caches.get(key)
+        return records.get(key)
     }
 
     const taskWithInternalAccess: typeof promise &
     {
-        _cacheRecord: typeof caches
+        _cacheRecord: typeof records
     } = promise as any
-    taskWithInternalAccess._cacheRecord = caches
+    taskWithInternalAccess._cacheRecord = records
     return taskWithInternalAccess
 }
