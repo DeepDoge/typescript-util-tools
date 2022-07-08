@@ -1,17 +1,4 @@
-import { FinalizeCallback, weakRecord } from "./weakRecord"
-
-declare class FinalizationRegistry<T>
-{
-    constructor(finalizer: (value: T) => void)
-    register(object: object, value: T, unregister: object): void
-    unregister(unregister: object): void
-}
-
-declare class WeakRef<T extends object>
-{
-    constructor(object: T)
-    deref(): T
-}
+import { weakRecord, type FinalizeCallback } from "./weakRecord"
 
 interface CacheRecordInfo<T extends object>
 {
