@@ -44,11 +44,12 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
 
     function set(key: string, value: T, finalizeCallback?: FinalizeCallback)
     {
-        records.set(key, value, (key) => {
+        records.set(key, value, (key) =>
+        {
             const isRemoved = afterFinalize(key)
             if (isRemoved) finalizeCallback(key)
         })
- 
+
         if (infos[key]) infos[key].copy = { ...value }
         else infos[key] = { active: false, copy: { ...value }, lastActive: 0 }
     }
