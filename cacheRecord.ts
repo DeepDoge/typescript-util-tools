@@ -47,7 +47,7 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
         records.set(key, value, (key) =>
         {
             const isRemoved = afterFinalize(key)
-            if (isRemoved) finalizeCallback(key)
+            if (isRemoved && finalizeCallback) finalizeCallback(key)
         })
 
         if (infos[key]) infos[key].copy = { ...value }
