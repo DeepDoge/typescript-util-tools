@@ -21,18 +21,14 @@ export function cachedPromise
         const cache = records.get(key)
         if (cache) return cache
 
-        const onGoing = running[key]
-        if (onGoing) return await onGoing
+        if (running[key]) return await running[key]
 
-        {
-            let finalizeCallback: FinalizeCallback = null
-            const result = await (running[key] = task({
-                params,
-                setFinalizeCallback: (callback: FinalizeCallback) => finalizeCallback = callback
-            }))
-            records.set(key, result, finalizeCallback)
-        }
-
+        let finalizeCallback: FinalizeCallback = null
+        const result = await (running[key] = task({
+            params,
+            setFinalizeCallback: (callback: FinalizeCallback) => finalizeCallback = callback
+        }))
+        records.set(key, result, finalizeCallback)
         delete running[key]
 
         return records.get(key)

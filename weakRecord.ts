@@ -23,30 +23,37 @@ export function weakRecord<T extends object>()
     {
         const cache = records[key]
         delete records[key]
-        cache.finalizeCallback?.call(null, key)
+        if (cache.finalizeCallback) cache.finalizeCallback(key)
     })
     function set(key: string, value: T, finalizeCallback?: FinalizeCallback)
     {
         if (typeof value !== 'object') throw `Can only cache object type but got ${key}: ${value}(${typeof value})`
-        const cache = get(key)
-        if (cache === value) return
-        if (cache) finalizer.unregister(cache)
+        const cacheValue = get(key)
+        if (cacheValue === value) return
+        if (cacheValue) 
+        {
+            finalizer.unregister(cacheValue)
+            const cache = records[key]
+            if (cache.finalizeCallback) cache.finalizeCallback(key)
+        }
 
+        finalizer.register(value, key, value)
         records[key] =
         {
             finalizeCallback,
             weakRef: new WeakRef(value)
         }
-        finalizer.register(value, key, value)
     }
     function get(key: string)
     {
+        const value = records[key]?.weakRef.deref()
+        if (records[key] && !value && records[key].finalizeCallback) records[key].finalizeCallback(key)
         return records[key]?.weakRef.deref()
     }
 
     function has(key: string) 
     {
-        return records[key]
+        return !!get(key)
     }
 
     return {

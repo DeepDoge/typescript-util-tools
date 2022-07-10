@@ -17,7 +17,7 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
         const info = infos[key]
         if (info.active)
         {
-            // console.log(`Not active anymore: ${key}`)
+            // console.log(`Not active anymore: ${key}`, info.copy)
             info.lastActive = Date.now()
             info.active = false
 
@@ -50,8 +50,8 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
             if (isRemoved && finalizeCallback) finalizeCallback(key)
         })
 
-        if (infos[key]) infos[key].copy = { ...value }
-        else infos[key] = { active: false, copy: { ...value }, lastActive: 0 }
+        if (infos[key]) infos[key].copy = Array.isArray(value) ? [...value] : { ...value } as any
+        else infos[key] = { active: false, copy: Array.isArray(value) ? [...value] : { ...value } as any, lastActive: 0 }
     }
     function get(key: string)
     {
