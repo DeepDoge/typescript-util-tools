@@ -44,5 +44,5 @@ export function promiseQueue<F extends (...params: any) => Promise<any>>(func: F
         })() as any
     }
 
-    return { call }
+    return call
 }
