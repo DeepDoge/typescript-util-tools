@@ -65,6 +65,6 @@ export function cacheRecord<T extends object>(delayGC = 60 * 1000)
     return {
         set,
         get,
-        has(key: string) { records.has(key) }
+        has(key: string) { return records.has(key) }
     }
 }
