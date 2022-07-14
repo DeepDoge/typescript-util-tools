@@ -1,7 +1,7 @@
 export function createCacheStore<T>(databaseName: string, storeName: string, expireTime: number = 1000 * 60 * 60 * 24 * 30)
 {
-    let db: IDBDatabase | null = null
-    const openRequest = indexedDB.open(databaseName)
+    let db: IDBDatabase = null
+    const openRequest = indexedDB.open(`(cache) ${databaseName}`)
     openRequest.addEventListener('upgradeneeded', () => openRequest.result.createObjectStore(storeName).createIndex("expireAt", "expireAt"))
     openRequest.addEventListener('success', () =>
     {
@@ -77,7 +77,7 @@ export function createCacheStore<T>(databaseName: string, storeName: string, exp
             const request = store.get(id)
             request.addEventListener('success', () => resolve(request.result))
             request.addEventListener('error', () => reject(request.error))
-        }) as { value: T, expireAt: Date } | undefined)
+        }) as { value: T, expireAt: Date })
 
         if (response === undefined) return undefined
         if (response.expireAt <= new Date())
