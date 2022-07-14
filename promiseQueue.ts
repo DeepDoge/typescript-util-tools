@@ -1,4 +1,3 @@
-
 let counter = 0
 export function promiseQueue<F extends (...params: any) => Promise<any>>(func: F)
 {
