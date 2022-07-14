@@ -1,7 +1,7 @@
-export function createCacheStore<T>(storeName: string, expireTime: number = Number.MAX_SAFE_INTEGER)
+export function createCacheStore<T>(databaseName: string, storeName: string, expireTime: number = 1000 * 60 * 60 * 24 * 30)
 {
     let db: IDBDatabase | null = null
-    const openRequest = indexedDB.open(storeName)
+    const openRequest = indexedDB.open(databaseName)
     openRequest.addEventListener('upgradeneeded', () => openRequest.result.createObjectStore(storeName).createIndex("expireAt", "expireAt"))
     openRequest.addEventListener('success', () =>
     {
@@ -68,7 +68,7 @@ export function createCacheStore<T>(storeName: string, expireTime: number = Numb
         })
     }
 
-    async function get(id: string): Promise<T | undefined>
+    async function get(id: string): Promise<T>
     {
         const response = (await new Promise(async (resolve, reject) =>
         {
@@ -88,5 +88,5 @@ export function createCacheStore<T>(storeName: string, expireTime: number = Numb
         return response.value
     }
 
-    return { put, get, clearAll }
+    return { put, get, clearAll, clearExpired }
 }
