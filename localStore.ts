@@ -1,4 +1,4 @@
-export function createCacheStore<T>(databaseName: string, storeName: string)
+export function createLocalStore<T>(databaseName: string, storeName: string)
 {
     let db: IDBDatabase = null
     const openRequest = indexedDB.open(`(store) ${databaseName}`)
